@@ -1,12 +1,3 @@
-# resource_types:
-#
-# - name: slack-notification
-#   type: docker-image
-#   source:
-#     repository: cfcommunity/slack-notification-resource
-#     tag: latest
-
-
 resources:
 
 - name: git-resource1
@@ -21,6 +12,13 @@ resources:
   check_every: 5s
   source:
     uri: git@github.com:tredfield/demo-concourse.git
+    private_key: {{github_private_key}}
+
+- name: git-resource3
+  type: git
+  check_every: 15s
+  source:
+    uri: git@github.com:tredfield/test-shippable.git
     private_key: {{github_private_key}}
 
 - name: bump-job2
@@ -49,7 +47,8 @@ jobs:
     passed: [job1]
   - get: git-resource2
     trigger: true
-  - task: say-goodbye
+  - get: git-resource3
+  - task: say-hello
     config:
       platform: linux
       image_resource:
