@@ -1,0 +1,80 @@
+# resource_types:
+#
+# - name: slack-notification
+#   type: docker-image
+#   source:
+#     repository: cfcommunity/slack-notification-resource
+#     tag: latest
+
+
+resources:
+
+- name: git-resource1
+  type: git
+  check_every: 15s
+  source:
+    uri: git@github.com:tredfield/test-prs.git
+    private_key: {{github_private_key}}
+
+- name: git-resource2
+  type: git
+  check_every: 5s
+  source:
+    uri: git@github.com:tredfield/demo-concourse.git
+    private_key: {{github_private_key}}
+
+# - name: slack-alert
+#   type: slack-notification
+#   source:
+#     url: {{ci_slack_travis_url}}
+
+- name: bump-job2
+  type: semver
+  source:
+    driver: git
+    uri: git@github.com:tredfield/demo-concourse.git
+    branch: master
+    initial_version: 0.0.1
+    file: version
+    private_key: {{trav_github_private_key}}
+
+
+jobs:
+- name: job1
+  plan:
+  - get: git-resource1
+    trigger: true
+  - get: git-resource2
+  - task: say-hello
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source: {repository: ubuntu}
+      run:
+        path: echo
+        args: ["Hello, world!"]
+
+  # - put: slack-alert
+  #   params:
+  #     text: |
+  #       demo notification
+  - put: bump-job2
+    params: {bump: patch}
+
+
+- name: job2
+  plan:
+  - get: git-resource1
+    passed: [job1]
+  - get: git-resource2
+    trigger: true
+  - task: say-goodbye
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source: {repository: ubuntu}
+      run:
+        path: echo
+        args: ["Goodbye, world!"]
